@@ -1,0 +1,10 @@
+connectors:
+  shell:
+
+logging:
+  console: false
+
+skills:
+  hello:
+  ham:
+    path: /home/stuart/Git/skill-hambot/
