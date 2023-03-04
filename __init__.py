@@ -122,17 +122,28 @@ class SolarInfo(Skill):
         event = rich_response(
             message,
             template + "\n" + tabulate(**band_info["bands"]),
-            template + "<br />" + html_table,
+            f"<h3>{template.split(':')[0]}</h3>{template.split(':')[1]}<br />{html_table}",
         )
         await message.respond(event)
 
     @regex_command("vhf", "print a report on VHF propagation effects.")
     async def vhf(self, message):
         vhf_info = self.band_info["vhf"]
-        resp = []
+        resp = [f"VHF Conditions as of {self.band_info['info']['updated']}"]
         for prop, info in vhf_info.items():
             resp.append(f"{prop}:")
             for region, status in info.items():
                 resp.append(f"\t{region}: {status}")
 
-        await message.respond("\n".join(resp))
+        html_resp = [f"<h2>VHF Conditions as of {self.band_info['info']['updated']}</h2>"]
+        for prop, info in vhf_info.items():
+            html_resp.append(f"<h3>{prop}</h3>")
+            for region, status in info.items():
+                html_resp.append(f"<b>{region}</b>: {status}<br />")
+
+        event = rich_response(
+            message,
+            "\n".join(resp),
+            "".join(html_resp),
+        )
+        await message.respond(event)
