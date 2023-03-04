@@ -122,7 +122,7 @@ class SolarInfo(Skill):
         event = rich_response(
             message,
             template + "\n" + tabulate(**band_info["bands"]),
-            f"<h3>{template.split(':')[0]}</h3>{template.split(':')[1]}<br />{html_table}",
+            f"<h4>{template.split(':')[0]}</h4>{template.split(':')[1]}<br />{html_table}",
         )
         await message.respond(event)
 
@@ -135,9 +135,9 @@ class SolarInfo(Skill):
             for region, status in info.items():
                 resp.append(f"\t{region}: {status}")
 
-        html_resp = [f"<h2>VHF Conditions as of {self.band_info['info']['updated']}</h2>"]
+        html_resp = [f"<h4>VHF Conditions as of {self.band_info['info']['updated']}</h4>"]
         for prop, info in vhf_info.items():
-            html_resp.append(f"<h3>{prop}</h3>")
+            html_resp.append(f"<h5>{prop}</h5>")
             for region, status in info.items():
                 html_resp.append(f"<b>{region}</b>: {status}<br />")
 
