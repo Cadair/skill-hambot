@@ -81,7 +81,9 @@ class SolarInfo(Skill):
         vhfconditions = solar.find("calculatedvhfconditions")
         vhf = defaultdict(dict)
         for band in vhfconditions.iter("phenomenon"):
-            vhf[band.attrib["name"]][band.attrib["location"]] = band.text
+            name = band.attrib["name"].replace("-", " ").title().replace("Vhf", "VHF")
+            location = band.attrib["location"].replace("_", " ").title()
+            vhf[name][location] = band.text
 
         info = {}
         for tag in solar:
@@ -105,13 +107,14 @@ class SolarInfo(Skill):
 
         # Colourise the html table
         html_rows = copy(band_info["bands"])
-        colour = defaultdict(lambda: "")
-        colour["Good"] = " data-mx-color='#00cc00'"
-        colour["Poor"] = " data-mx-color='#cc0000'"
-        colour["Fair"] = " data-mx-color='#ffcc00'"
+        colour = {
+            "Good": " data-mx-color='#00cc00'",
+            "Poor": " data-mx-color='#cc0000'",
+            "Fair": " data-mx-color='#ffcc00'",
+        }
         new_rows = []
         for row in html_rows["tabular_data"]:
-            new_rows.append([f"<font{colour[r]}>{r}</font>" for r in row])
+            new_rows.append([f"<font{colour[r]}>{r}</font>" if r in colour else r for r in row])
         html_rows["tabular_data"] = new_rows
         html_table = tabulate(**html_rows, tablefmt="unsafehtml")
 
@@ -123,7 +126,13 @@ class SolarInfo(Skill):
         )
         await message.respond(event)
 
-    # @regex_command("vhf", "print a report on VHF propagation effects.")
-    # async def vhf(self, message):
-    #     band_info = self.band_info
-    #     await message.respond(f"{band_info['vhf']}")
+    @regex_command("vhf", "print a report on VHF propagation effects.")
+    async def vhf(self, message):
+        vhf_info = self.band_info["vhf"]
+        resp = []
+        for prop, info in vhf_info.items():
+            resp.append(f"{prop}:")
+            for region, status in info.items():
+                resp.append(f"\t{region}: {status}")
+
+        await message.respond("\n".join(resp))
