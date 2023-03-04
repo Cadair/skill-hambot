@@ -2,12 +2,15 @@ import xml.etree.ElementTree as ET
 from collections import defaultdict
 from textwrap import dedent
 from urllib.request import urlopen
+from copy import copy
 
 from cachetools import TTLCache
-from tabulate import tabulate
+from opsdroid.connector.matrix import ConnectorMatrix
+from opsdroid.connector.matrix.events import GenericMatrixRoomEvent
+from opsdroid.events import Message
 from opsdroid.matchers import match_regex
 from opsdroid.skill import Skill
-
+from tabulate import tabulate
 
 HAMBOT_COMMAND_PREFIX = "!"
 HAMBOT_COMMANDS = {}
@@ -34,6 +37,21 @@ async def help(opsdroid, config, message):
     await message.respond(help_text)
 
 
+def rich_response(message, body, formatted_body):
+    if isinstance(message.connector, ConnectorMatrix):
+        return GenericMatrixRoomEvent(
+            "m.room.message",
+            {
+                "body": body,
+                "format": "org.matrix.custom.html",
+                "formatted_body": formatted_body,
+                "msgtype": "m.notice" if message.connector.send_m_notice else "m.text",
+            },
+        )
+    else:
+        return Message(body)
+
+
 class SolarInfo(Skill):
     """
     An opsdroid skill to retrieve propagation information.
@@ -56,10 +74,9 @@ class SolarInfo(Skill):
         for band in conditions.iter("band"):
             bands[band.attrib["name"]][band.attrib["time"]] = band.text
 
-        rows = []
+        band_table = {"tabular_data": [], "headers": ["Band", "Day", "Night"]}
         for band, conditions in bands.items():
-            rows.append([band, conditions["day"], conditions["night"]])
-        bands = tabulate(rows, headers=["band", "day", "night"])
+            band_table["tabular_data"].append([band, conditions["day"], conditions["night"]])
 
         vhfconditions = solar.find("calculatedvhfconditions")
         vhf = defaultdict(dict)
@@ -73,7 +90,7 @@ class SolarInfo(Skill):
             info[tag.tag] = tag.text
 
         band_info = {
-            "bands": bands,
+            "bands": band_table,
             "vhf": dict(vhf),
             "info": info,
         }
@@ -81,8 +98,27 @@ class SolarInfo(Skill):
 
     @regex_command("bands", "print a propagation prediction for the HF bands.")
     async def bands(self, message):
-        band_info = self.band_info
-        await message.respond(str(band_info['bands']))
+        band_info = self.band_info["bands"]
+
+        # Colourise the html table
+        html_rows = copy(band_info)
+        colour = defaultdict(lambda: "")
+        colour["Good"] = " data-mx-color='#00cc00'"
+        colour["Poor"] = " data-mx-color='#cc0000'"
+        colour["Fair"] = " data-mx-color='#ffcc00'"
+        new_rows = []
+        for row in html_rows["tabular_data"]:
+            new_rows.append([f"<font{colour[r]}>{r}</font>" for r in row])
+        html_rows["tabular_data"] = new_rows
+        html_table = tabulate(**html_rows, tablefmt="unsafehtml")
+
+        # Generate the event class based on the connector type
+        event = rich_response(
+            message,
+            tabulate(**band_info),
+            html_table,
+        )
+        await message.respond(event)
 
     # @regex_command("vhf", "print a report on VHF propagation effects.")
     # async def vhf(self, message):
