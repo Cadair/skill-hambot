@@ -87,7 +87,7 @@ class SolarInfo(Skill):
         for tag in solar:
             if tag.tag.startswith("calculated"):
                 continue
-            info[tag.tag] = tag.text
+            info[tag.tag] = tag.text.strip()
 
         band_info = {
             "bands": band_table,
@@ -98,10 +98,13 @@ class SolarInfo(Skill):
 
     @regex_command("bands", "print a propagation prediction for the HF bands.")
     async def bands(self, message):
-        band_info = self.band_info["bands"]
+        band_info = self.band_info
+        # Template a header row
+        template = "Bands as of {updated}: SFI={solarflux} SN={sunspots} A={aindex} K={kindex}"
+        template = template.format(**band_info["info"])
 
         # Colourise the html table
-        html_rows = copy(band_info)
+        html_rows = copy(band_info["bands"])
         colour = defaultdict(lambda: "")
         colour["Good"] = " data-mx-color='#00cc00'"
         colour["Poor"] = " data-mx-color='#cc0000'"
@@ -115,8 +118,8 @@ class SolarInfo(Skill):
         # Generate the event class based on the connector type
         event = rich_response(
             message,
-            tabulate(**band_info),
-            html_table,
+            template + "\n" + tabulate(**band_info["bands"]),
+            template + "<br />" + html_table,
         )
         await message.respond(event)
 
