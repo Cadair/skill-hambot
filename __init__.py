@@ -108,9 +108,9 @@ class SolarInfo(Skill):
         # Colourise the html table
         html_rows = copy(band_info["bands"])
         colour = {
-            "Good": " data-mx-color='#00cc00'",
-            "Poor": " data-mx-color='#cc0000'",
-            "Fair": " data-mx-color='#ffcc00'",
+            "Good": " data-mx-color='#00cc00' color='#00cc00'",
+            "Poor": " data-mx-color='#cc0000' color='#cc0000'",
+            "Fair": " data-mx-color='#ffcc00' color='#ffcc00'",
         }
         new_rows = []
         for row in html_rows["tabular_data"]:
