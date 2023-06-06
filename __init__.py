@@ -89,7 +89,8 @@ class SolarInfo(Skill):
         for tag in solar:
             if tag.tag.startswith("calculated"):
                 continue
-            info[tag.tag] = tag.text.strip()
+            if tag.text is not None:
+                info[tag.tag] = tag.text.strip()
 
         band_info = {
             "bands": band_table,
